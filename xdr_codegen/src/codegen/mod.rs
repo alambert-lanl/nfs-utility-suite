@@ -232,7 +232,7 @@ impl ValidatedDefinition {
             ValidatedDefinition::TypeDef(t) => match &t.decl.kind {
                 DeclarationKind::Scalar(ty) => ty.as_zcopy_deser_type_name(tab),
                 DeclarationKind::Optional(_o) => unimplemented!(),
-                DeclarationKind::Array(arr) => arr.as_zcopy_deser_type_name(tab),
+                DeclarationKind::Array(_arr) => unimplemented!(),
             },
         }
     }
@@ -268,18 +268,6 @@ enum Context {
 }
 
 impl Array {
-    fn as_zcopy_deser_type_name(&self, tab: &ValidatedSymbolTable) -> String {
-        match &self.kind {
-            ArrayKind::Ascii => "&'a std::ffi::OsStr".to_string(),
-            ArrayKind::Byte => "&'a [u8]".to_string(),
-            ArrayKind::UserType(ty) => {
-                format!(
-                    "xdr_lib::ArrayIter<'a, {}>",
-                    ty.as_zcopy_deser_type_name(tab)
-                )
-            }
-        }
-    }
     // XXX: represent arrays as slices instead of as vectors?
     fn as_type_name(&self, tab: &ValidatedSymbolTable) -> String {
         let inner_type = match &self.kind {
@@ -323,13 +311,6 @@ impl Array {
         }
     }
 
-    fn zcopy_gen_inner_type(&self, tab: &ValidatedSymbolTable) -> String {
-        match &self.kind {
-            ArrayKind::Ascii | ArrayKind::Byte => "u8".to_string(),
-            ArrayKind::UserType(ty) => ty.as_zcopy_deser_type_name(tab),
-        }
-    }
-
     fn fixed_length_array_initializer(&self, val: &Value, tab: &ValidatedSymbolTable) -> String {
         let inner_type = match &self.kind {
             ArrayKind::Ascii => "std::ffi::OsString".to_string(),
@@ -356,50 +337,6 @@ impl Array {
         });
         buf.contents
     }
-
-    fn elem_size(&self, size_tab: &SizeTab) -> Option<usize> {
-        match &self.kind {
-            ArrayKind::Byte | ArrayKind::Ascii => Some(1),
-            ArrayKind::UserType(xdr_type) => xdr_type.size(size_tab),
-        }
-    }
-
-    // Codegen to extract the element count from an array.
-    // We default to storing in a variable called "_length".
-    // We also assume that the base offset for the array is stored in a variable called "off".
-    fn array_count_extractor(
-        &self,
-        mut varname: Option<&str>,
-        tab: &ValidatedSymbolTable,
-        advance_input_off: bool,
-        emit_lencheck: bool,
-    ) -> String {
-        let name = varname.get_or_insert("length");
-
-        match &self.size {
-            ArraySize::Fixed(value) => format!(
-                "let {}: usize = {}; let _array_count_size: usize = 0;",
-                name,
-                value.as_const(tab)
-            ),
-            _ => {
-                format!(
-                    "{}let {}: usize = xdr_lib::get_u32_immut(_input) as usize;\nlet _array_count_size: usize = 4;{}",
-                    if emit_lencheck {
-                        "if _input.len() < 4 {{ return Err(xdr_lib::DeserializeError); }}\n"
-                    } else {
-                        ""
-                    },
-                    name,
-                    if advance_input_off {
-                        "\nlet off = off + _array_count_size;\nlet _input = &self.buf[off..];"
-                    } else {
-                        ""
-                    }
-                )
-            }
-        }
-    }
 }
 
 impl NamedDeclaration {
@@ -414,8 +351,8 @@ impl NamedDeclaration {
     fn as_zcopy_dser_type_name(&self, tab: &ValidatedSymbolTable) -> String {
         match &self.kind {
             DeclarationKind::Scalar(s) => s.as_zcopy_deser_type_name(tab),
-            DeclarationKind::Array(arr) => arr.as_zcopy_deser_type_name(tab),
             DeclarationKind::Optional(_o) => unimplemented!(),
+            DeclarationKind::Array(_arr) => unimplemented!(),
         }
     }
 

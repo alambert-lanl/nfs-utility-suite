@@ -10,75 +10,6 @@ const DESERIALIZE_SIGNATURE: &str =
     "pub fn deserialize(&mut self, input: &mut &[u8]) -> xdr_lib::Result<()>";
 
 impl Array {
-    pub(super) fn get_size_inline_zcopy(
-        &self,
-        buf: &mut CodeBuf,
-        tab: &ValidatedSymbolTable,
-        size_tab: &SizeTab,
-    ) {
-        buf.add_line(&self.array_count_extractor(Some("length"), tab, false, true));
-
-        if let Some(elem_width) = self.elem_size(size_tab) {
-            buf.add_line(&format!(
-                "let required = xdr_lib::geq_4byte_boundary(length * {}usize) + _array_count_size;",
-                elem_width
-            ));
-
-            buf.add_line("Ok(required)");
-        } else {
-            buf.block_statement(
-                &format!(
-                    "let mut it = xdr_lib::ArrayIter::<'a, {}>",
-                    self.zcopy_gen_inner_type(tab)
-                ),
-                |buf| {
-                    buf.add_line("buf: _input,");
-                    buf.add_line("item_width: None,");
-                    buf.add_line("count: length,");
-                    buf.add_line("off: 0,");
-                    buf.add_line("..Default::default()");
-                },
-            );
-
-            buf.add_line("it.by_ref().for_each(drop);");
-            buf.add_line("");
-            buf.code_block("if it.i != length", |buf| {
-                buf.add_line("return Err(xdr_lib::DeserializeError);");
-            });
-            buf.add_line("");
-            buf.add_line("Ok(it.off + _array_count_size)");
-        }
-    }
-
-    pub(super) fn deserialize_inline_zcopy(
-        &self,
-        buf: &mut CodeBuf,
-        tab: &ValidatedSymbolTable,
-        _size_tab: &SizeTab,
-    ) {
-        buf.add_line(&self.array_count_extractor(Some("length"), tab, true, false));
-
-        match &self.kind {
-            ArrayKind::Byte => buf.add_line("&_input[..length]"),
-            ArrayKind::Ascii => buf.add_line("std::ffi::OsStr::from_bytes(&_input[..length])"),
-            ArrayKind::UserType(_) => {
-                buf.code_block(
-                    &format!(
-                        "xdr_lib::ArrayIter::<'a, {}>",
-                        self.zcopy_gen_inner_type(tab)
-                    ),
-                    |buf| {
-                        buf.add_line("buf: _input,");
-                        buf.add_line("item_width: None,");
-                        buf.add_line("count: length,");
-                        buf.add_line("off: 0,");
-                        buf.add_line("..Default::default()");
-                    },
-                );
-            }
-        }
-    }
-
     pub(super) fn deserialize_inline(
         &self,
         name: &str,
@@ -169,8 +100,8 @@ impl NamedDeclaration {
             DeclarationKind::Scalar(ty) => {
                 ty.deserialize_inline_zcopy(buf, tab, size_tab);
             }
-            DeclarationKind::Array(a) => {
-                a.deserialize_inline_zcopy(buf, tab, size_tab);
+            DeclarationKind::Array(_a) => {
+                unimplemented!();
             }
             DeclarationKind::Optional(_o) => {
                 unimplemented!();
@@ -190,8 +121,8 @@ impl NamedDeclaration {
             DeclarationKind::Scalar(ty) => {
                 ty.get_size_inline_zcopy(buf, tab, size_tab, fallible_parent, member_name);
             }
-            DeclarationKind::Array(a) => {
-                a.get_size_inline_zcopy(buf, tab, size_tab);
+            DeclarationKind::Array(_a) => {
+                unimplemented!();
             }
             DeclarationKind::Optional(_ty) => {
                 unimplemented!();
@@ -403,15 +334,7 @@ impl ValidatedStruct {
                                     "we should only have indeterminate named types here"
                                 ),
                             },
-                            DeclarationKind::Array(array) => {
-                                buf.add_line(&format!(
-                                    "let off: usize = {};",
-                                    Self::offset_to_string(member_off)
-                                ));
-                                buf.add_line("let _input = &self.buf[off..];");
-
-                                array.get_size_inline_zcopy(buf, tab, size_tab);
-                            }
+                            DeclarationKind::Array(_array) => unimplemented!(),
                             DeclarationKind::Optional(_xdr_type) => unimplemented!(),
                         };
                     });
