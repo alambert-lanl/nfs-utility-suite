@@ -231,7 +231,7 @@ impl ValidatedDefinition {
             ValidatedDefinition::Const(c) => c.value.as_type_name(tab),
             ValidatedDefinition::TypeDef(t) => match &t.decl.kind {
                 DeclarationKind::Scalar(ty) => ty.as_zcopy_deser_type_name(tab),
-                DeclarationKind::Optional(o) => o.optional_type_name_zcopy(tab),
+                DeclarationKind::Optional(_o) => unimplemented!(),
                 DeclarationKind::Array(arr) => arr.as_zcopy_deser_type_name(tab),
             },
         }
@@ -415,7 +415,7 @@ impl NamedDeclaration {
         match &self.kind {
             DeclarationKind::Scalar(s) => s.as_zcopy_deser_type_name(tab),
             DeclarationKind::Array(arr) => arr.as_zcopy_deser_type_name(tab),
-            DeclarationKind::Optional(o) => o.optional_type_name_zcopy(tab),
+            DeclarationKind::Optional(_o) => unimplemented!(),
         }
     }
 
@@ -449,16 +449,8 @@ impl NamedDeclaration {
             && !size_tab.get(typename).unwrap().is_determinate()
     }
 
-    fn is_varlen_optional_reader(&self, tab: &ValidatedSymbolTable, size_tab: &SizeTab) -> bool {
-        let typename = if let DeclarationKind::Optional(XdrType::Name(n)) = &self.kind {
-            n
-        } else {
-            return false;
-        };
-        self.as_zcopy_dser_type_name(tab).starts_with("Option<")
-            && self.as_zcopy_dser_type_name(tab).ends_with("Reader<'a>>")
-            && self.get_enum(tab).is_none()
-            && !size_tab.get(typename).unwrap().is_determinate()
+    fn is_varlen_optional_reader(&self, _tab: &ValidatedSymbolTable, _size_tab: &SizeTab) -> bool {
+        return false;
     }
 }
 
@@ -770,11 +762,7 @@ impl ValidatedStruct {
                 if member.is_varlen_reader(tab, size_tab)
                     || member.is_varlen_optional_reader(tab, size_tab)
                 {
-                    let cache_type = if let DeclarationKind::Optional(opt) = &member.kind {
-                        opt.as_zcopy_deser_type_name(tab)
-                    } else {
-                        member.as_zcopy_dser_type_name(tab)
-                    };
+                    let cache_type = member.as_zcopy_dser_type_name(tab);
 
                     buf.add_line(&format!("{}: std::cell::OnceCell<{}>,", dep, cache_type,));
                 }
@@ -1029,15 +1017,6 @@ impl XdrType {
 
         if self.self_referential_optional(tab) {
             format!("Vec<{inner_type}>")
-        } else {
-            format!("Option<{inner_type}>")
-        }
-    }
-    fn optional_type_name_zcopy(&self, tab: &ValidatedSymbolTable) -> String {
-        let inner_type = self.as_zcopy_deser_type_name(tab);
-
-        if self.self_referential_optional(tab) {
-            format!("xdr_lib::LinkedListIter::<'a, {inner_type}>")
         } else {
             format!("Option<{inner_type}>")
         }

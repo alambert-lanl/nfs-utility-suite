@@ -172,8 +172,8 @@ impl NamedDeclaration {
             DeclarationKind::Array(a) => {
                 a.deserialize_inline_zcopy(buf, tab, size_tab);
             }
-            DeclarationKind::Optional(o) => {
-                o.deserialize_optional_inline_zcopy(buf, tab, size_tab);
+            DeclarationKind::Optional(_o) => {
+                unimplemented!();
             }
         }
     }
@@ -193,8 +193,8 @@ impl NamedDeclaration {
             DeclarationKind::Array(a) => {
                 a.get_size_inline_zcopy(buf, tab, size_tab);
             }
-            DeclarationKind::Optional(ty) => {
-                ty.get_optional_size_inline_zcopy(buf, tab, size_tab, fallible_parent, member_name);
+            DeclarationKind::Optional(_ty) => {
+                unimplemented!();
             }
         }
     }
@@ -269,7 +269,6 @@ impl ValidatedUnionEnumBody {
             }
         });
     }
-
 }
 
 impl ValidatedStruct {
@@ -413,20 +412,7 @@ impl ValidatedStruct {
 
                                 array.get_size_inline_zcopy(buf, tab, size_tab);
                             }
-                            DeclarationKind::Optional(xdr_type) => {
-                                buf.add_line(&format!(
-                                    "let off: usize = {};",
-                                    Self::offset_to_string(member_off)
-                                ));
-                                buf.add_line("let _input = &self.buf[off..];");
-                                xdr_type.get_optional_size_inline_zcopy(
-                                    buf,
-                                    tab,
-                                    size_tab,
-                                    true,
-                                    Some(format!("self.{}", member.name)),
-                                );
-                            }
+                            DeclarationKind::Optional(_xdr_type) => unimplemented!(),
                         };
                     });
 
@@ -627,58 +613,6 @@ impl XdrType {
         }
     }
 
-    pub(super) fn get_optional_size_inline_zcopy(
-        &self,
-        buf: &mut CodeBuf,
-        tab: &ValidatedSymbolTable,
-        size_tab: &SizeTab,
-        fallible_parent: bool,
-        cache_name: Option<String>,
-    ) {
-        buf.add_line("let has_optional = xdr_lib::get_i32_immut(_input);");
-        buf.code_block("match has_optional", |buf| {
-            buf.add_line("0 => Ok(4),");
-            buf.code_block("_ =>", |buf| {
-                if self.self_referential_optional(tab) {
-                    buf.block_statement(
-                        &format!(
-                            "let mut it = xdr_lib::LinkedListIter::<'a, {}>",
-                            self.as_zcopy_deser_type_name(tab)
-                        ),
-                        |buf| {
-                            buf.add_line("buf: _input,");
-                            buf.add_line(&format!(
-                                "item_width: {},",
-                                self.size(size_tab)
-                                    .map(|v| format!("Some({})", v))
-                                    .unwrap_or("None".to_string())
-                            ));
-                            buf.add_line("off: 0,");
-                            buf.add_line("..Default::default()");
-                        },
-                    );
-
-                    buf.add_line("it.by_ref().for_each(drop);");
-                    buf.add_line("");
-                    buf.add_line("Ok(it.off)");
-                } else if let Some(opt_size) = self.size(size_tab) {
-                    buf.add_line(&format!("Ok({})", opt_size + 4));
-                } else {
-                    buf.add_line("let off = off + 4;");
-                    buf.add_line("let _input = &self.buf[off..];");
-                    self.get_size_inline_zcopy(
-                        buf,
-                        tab,
-                        size_tab,
-                        fallible_parent,
-                        cache_name.clone(),
-                    );
-                    buf.add_line("\t.map(|val| val + 4usize)");
-                }
-            });
-        });
-    }
-
     // returns (name, fallible)
     fn deserialize_method_zcopy(&self, tab: &ValidatedSymbolTable) -> (String, bool) {
         match self {
@@ -724,46 +658,6 @@ impl XdrType {
                     buf.add_line(&format!("let mut new = {};", self.default_value(tab)));
                     self.deserialize_inline("new", buf, tab);
                     buf.add_line("Some(new)");
-                })
-            });
-        }
-    }
-
-    pub(super) fn deserialize_optional_inline_zcopy(
-        &self,
-        buf: &mut CodeBuf,
-        tab: &ValidatedSymbolTable,
-        size_tab: &SizeTab,
-    ) {
-        if self.self_referential_optional(tab) {
-            buf.code_block(
-                &format!(
-                    "xdr_lib::LinkedListIter::<'a, {}>",
-                    self.as_zcopy_deser_type_name(tab)
-                ),
-                |buf| {
-                    buf.add_line("buf: _input,");
-                    buf.add_line(&format!(
-                        "item_width: {},",
-                        self.size(size_tab)
-                            .map(|v| format!("Some({})", v))
-                            .unwrap_or("None".to_string()),
-                    ));
-                    buf.add_line("..Default::default()");
-                },
-            );
-        } else {
-            buf.add_line("let has_val = xdr_lib::get_i32_immut(_input);");
-            buf.code_block("match has_val", |buf| {
-                buf.add_line("0 => None,");
-                buf.code_block("_ =>", |buf| {
-                    buf.block_statement("let val = ", |buf| {
-                        buf.add_line("let off = off + 4;");
-                        buf.add_line("let _input = &self.buf[off..];");
-                        self.deserialize_inline_zcopy(buf, tab, size_tab);
-                    });
-                    buf.add_line("Some(val)");
-                    // buf.add_line("val.map(|v| Some(v))");
                 })
             });
         }
