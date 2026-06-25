@@ -829,9 +829,10 @@ impl ValidatedStruct {
         for name in varlen_members {
             let (member, _) = self.members.iter().find(|val| val.0.name == *name).unwrap();
 
-            buf.code_block(&format!("fn get_{}_width(&self) -> usize", name), |buf| {
-                member.get_width(buf, &format!("self.{}", name), tab)
-            });
+            buf.code_block(
+                &format!("fn get_{}_width(&self) -> usize", name.replace("r#", "")),
+                |buf| member.get_width(buf, &format!("self.{}", name), tab),
+            );
         }
 
         buf.code_block("pub fn get_width(&self) -> usize", |buf| {
