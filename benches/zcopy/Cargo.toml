@@ -1,0 +1,19 @@
+[package]
+name = "bench"
+version = "0.1.0"
+edition = "2021"
+
+[dev-dependencies]
+criterion = "0.8"
+
+[[bench]]
+path = "src/zcopy_recurse_optional.rs"
+name = "zcopy_recurse_optional"
+harness = false
+
+[build-dependencies]
+xdr_codegen = { path = "../../xdr_codegen" }
+
+[dependencies]
+xdr_lib = { path = "../../xdr_lib" }
+rand = "0.10.1"

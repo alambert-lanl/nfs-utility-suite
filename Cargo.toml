@@ -9,4 +9,5 @@ members = [
     "tests/zcopy",
     "xdr_codegen",
     "xdr_lib",
+    "benches/zcopy"
 ]
