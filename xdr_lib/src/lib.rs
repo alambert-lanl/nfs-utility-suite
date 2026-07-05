@@ -80,31 +80,42 @@ pub fn encode_padding(offset: usize, buf: &mut [u8]) -> usize {
     padded_offset
 }
 
+#[inline(always)]
 pub fn get_i32_infallible(input: &[u8]) -> i32 {
     let (int_bytes, _rest) = input.split_at(std::mem::size_of::<i32>());
-    i32::from_be_bytes(int_bytes.try_into().unwrap())
+    unsafe { i32::from_be_bytes(int_bytes.try_into().unwrap_unchecked()) }
 }
 
+#[inline(always)]
 pub fn get_u32_infallible(input: &[u8]) -> u32 {
     let (int_bytes, _rest) = input.split_at(std::mem::size_of::<u32>());
-    u32::from_be_bytes(int_bytes.try_into().unwrap())
+    unsafe { u32::from_be_bytes(int_bytes.try_into().unwrap_unchecked()) }
 }
 
+#[inline(always)]
 pub fn get_i64_infallible(input: &[u8]) -> i64 {
     let (int_bytes, _rest) = input.split_at(std::mem::size_of::<i64>());
-    i64::from_be_bytes(int_bytes.try_into().unwrap())
+    unsafe { i64::from_be_bytes(int_bytes.try_into().unwrap_unchecked()) }
 }
 
+#[inline(always)]
 pub fn get_u64_infallible(input: &[u8]) -> u64 {
     let (int_bytes, _rest) = input.split_at(std::mem::size_of::<u64>());
-    u64::from_be_bytes(int_bytes.try_into().unwrap())
+    unsafe { u64::from_be_bytes(int_bytes.try_into().unwrap_unchecked()) }
 }
 
+#[inline(always)]
 pub fn get_bool_infallible(input: &[u8]) -> bool {
     let (bool_bytes, _rest) = input.split_at(std::mem::size_of::<u32>());
-    !matches!(u32::from_be_bytes(bool_bytes.try_into().unwrap()), 0)
+    unsafe {
+        !matches!(
+            u32::from_be_bytes(bool_bytes.try_into().unwrap_unchecked()),
+            0
+        )
+    }
 }
 
+#[inline(always)]
 pub fn geq_4byte_boundary(offset: usize) -> usize {
     (offset + 3) & !(0b11usize)
 }
