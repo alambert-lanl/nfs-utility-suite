@@ -252,7 +252,7 @@ where
             return Some(Err(DeserializeError));
         }
 
-        let has_val = get_i32_infallible(&self.buf[self.off..]);
+        let has_val = get_i32_infallible(unsafe { self.buf.get_unchecked(self.off..) });
 
         self.off += 4;
 
@@ -276,7 +276,7 @@ where
                     .unwrap_or(&self.buf[self.off..]),
             )
         } else {
-            T::from_buf(&self.buf[self.off..])
+            T::from_buf(unsafe { self.buf.get_unchecked(self.off..) })
         };
 
         if let Ok(ret) = ret {
