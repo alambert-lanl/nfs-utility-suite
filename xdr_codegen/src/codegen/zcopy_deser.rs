@@ -234,7 +234,7 @@ impl XdrType {
                     buf.add_line(&format!("Ok({})", opt_size + 4));
                 } else {
                     buf.add_line("let off = off + 4;");
-                    buf.add_line("let _input = &self.buf[off..];");
+                    buf.add_line("let _input = unsafe { self.buf.get_unchecked(off..) };");
                     self.get_size_inline_zcopy(
                         buf,
                         tab,
@@ -411,7 +411,7 @@ impl ValidatedStruct {
                                     let typename = typename.strip_suffix("<'a>").map(|rest| format!("{}::<'a>", rest)).unwrap_or(typename.to_string());
                                     let typename = typename.strip_prefix("Option").map(|rest| format!("Option::{}", rest)).unwrap_or(typename.to_string());
 
-                                    buf.add_line(&format!("let {} = {}::from_buf(&buf[off..])?;", nd.name, typename));
+                                    buf.add_line(&format!("let {} = {}::from_buf(unsafe {{ buf.get_unchecked(off..) }})?;", nd.name, typename));
 
                                     if i + 1 != deps.len() {
                                         buf.add_line(&format!(
@@ -549,7 +549,7 @@ impl ValidatedStruct {
                 .filter_map(|v| v.0.maybe_enum(tab).map(|en| (v, en)))
             {
                 buf.add_line(&format!("let off = {};", Self::offset_to_string(off)));
-                buf.add_line("let _input = &self.buf[off..];");
+                buf.add_line("let _input = unsafe { self.buf.get_unchecked(off..) };");
                 match &nd.kind {
                     DeclarationKind::Scalar(xdr_type) => buf.add_line(&format!(
                         "{}(_input)?;",
@@ -585,7 +585,9 @@ impl ValidatedStruct {
                                     "let off = {};",
                                     Self::offset_to_string(member_off)
                                 ));
-                                buf.add_line("let _input = &self.buf[off..];");
+                                buf.add_line(
+                                    "let _input = unsafe { self.buf.get_unchecked(off..) };",
+                                );
                                 xdr_type.get_optional_size_inline_zcopy(
                                     buf,
                                     tab,
@@ -630,7 +632,7 @@ impl ValidatedStruct {
                         ));
                     }
 
-                    buf.add_line("let _input = &self.buf[off..];");
+                    buf.add_line("let _input = unsafe { self.buf.get_unchecked(off..) };");
 
                     // Validation can be here
                     member.deserialize_inline_zcopy(
@@ -782,7 +784,7 @@ impl ValidatedUnion {
                     "fn from_buf(buf: &'a [u8]) -> xdr_lib::Result<Self>",
                     |buf| {
                         buf.add_line("let off = 0;");
-                        buf.add_line("let _input = &buf[off..];");
+                        buf.add_line("let _input = unsafe { buf.get_unchecked(off..) };");
                         match &self.body {
                             ValidatedUnionBody::Bool(b) => {
                                 buf.block_statement("let inner = ", |buf| {
@@ -806,7 +808,7 @@ impl ValidatedUnion {
 
                 buf.code_block("fn get_width(&self) -> xdr_lib::Result<usize>", |buf| {
                     buf.add_line("let off = 0usize;");
-                    buf.add_line("let _input = &self.buf[off..];");
+                    buf.add_line("let _input = unsafe { self.buf.get_unchecked(off..) };");
                     match &self.body {
                         ValidatedUnionBody::Bool(b) => {
                             b.get_size_inline_bool_zcopy(buf, tab, true, None)
@@ -861,7 +863,7 @@ impl ValidatedUnionBoolBody {
             buf.code_block("_ =>", |buf| {
                 buf.block_statement("let val = ", |buf| {
                     buf.add_line("let off = off + 4;");
-                    buf.add_line("let _input = &buf[off..];");
+                    buf.add_line("let _input = unsafe { buf.get_unchecked(off..) };");
 
                     let size = self.true_arm.size(tab);
                     if let Some(size) = size {
@@ -985,7 +987,7 @@ impl ValidatedUnionEnumBody {
                         }
                         Declaration::Named(n) => {
                             buf.add_line("let off = off + 4;");
-                            buf.add_line("let _input = &buf[off..];");
+                            buf.add_line("let _input = unsafe { buf.get_unchecked(off..) };");
 
                             let size = n.size(tab);
 
@@ -1016,7 +1018,7 @@ impl ValidatedUnionEnumBody {
                     Declaration::Named(n) => {
                         buf.code_block("_ => ", |buf| {
                             buf.add_line("let off = off + 4;");
-                            buf.add_line("let _input = &buf[off..];");
+                            buf.add_line("let _input = unsafe { buf.get_unchecked(off..) };");
 
                             let size = n.size(tab);
 
