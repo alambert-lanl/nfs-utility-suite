@@ -29,6 +29,9 @@ pub struct Params {
 
     /// Names to ommit derive(Debug) for
     pub omit_debug_for: Vec<String>,
+
+    /// Generate serde serialization derivation
+    pub derive_serialize: bool,
 }
 
 impl Default for Params {
@@ -37,6 +40,7 @@ impl Default for Params {
             no_alloc: false,
             alloc: true,
             zcopy: false,
+            derive_serialize: false,
             omit_debug_for: Vec::new(),
         }
     }
@@ -65,6 +69,10 @@ pub fn codegen(schema: &ValidatedSchema, module_name: &str, params: &Params) -> 
             buf.add_line("#[allow(unused_imports)]");
             buf.add_line("use xdr_lib::Reader;");
             buf.add_line("");
+        }
+
+        if params.derive_serialize {
+            buf.add_line("use serde::Serialize;");
         }
 
         for def in schema.definition_list.iter() {
@@ -134,16 +142,16 @@ impl ValidatedDefinition {
 
             ValidatedDefinition::Enum(e) => {
                 let debug = !params.omit_debug_for.contains(&e.name);
-                e.definition(buf, debug);
+                e.definition(buf, debug, params.derive_serialize);
             }
             ValidatedDefinition::Struct(s) => {
                 let debug = !params.omit_debug_for.contains(&s.name);
-                s.definition(buf, tab, debug);
+                s.definition(buf, tab, debug, params.derive_serialize);
             }
             ValidatedDefinition::TypeDef(_) => {}
             ValidatedDefinition::Union(u) => {
                 let debug = !params.omit_debug_for.contains(&u.name);
-                u.definition(buf, tab, debug);
+                u.definition(buf, tab, debug, params.derive_serialize);
             }
         }
     }
@@ -489,8 +497,14 @@ impl ValidatedUnion {
         }
         buf.add_line("");
     }
-    fn definition(&self, buf: &mut CodeBuf, tab: &ValidatedSymbolTable, debug: bool) {
-        buf.type_header(debug);
+    fn definition(
+        &self,
+        buf: &mut CodeBuf,
+        tab: &ValidatedSymbolTable,
+        debug: bool,
+        derive_serialize: bool,
+    ) {
+        buf.type_header(debug, derive_serialize);
         match &self.body {
             ValidatedUnionBody::Bool(b) => b.definition_bool(&self.name, buf, tab),
             ValidatedUnionBody::Enum(e) => e.definition_enum(&self.name, buf, tab),
@@ -865,8 +879,14 @@ impl ValidatedStruct {
         });
     }
 
-    fn definition(&self, buf: &mut CodeBuf, tab: &ValidatedSymbolTable, debug: bool) {
-        buf.type_header(debug);
+    fn definition(
+        &self,
+        buf: &mut CodeBuf,
+        tab: &ValidatedSymbolTable,
+        debug: bool,
+        derive_serialize: bool,
+    ) {
+        buf.type_header(debug, derive_serialize);
         buf.code_block(&format!("pub struct {}", self.name), |buf| {
             for (decl, _) in self.members.iter() {
                 self.member_declaration(decl, buf, tab);
@@ -940,8 +960,8 @@ impl ValidatedEnum {
             });
         });
     }
-    fn definition(&self, buf: &mut CodeBuf, debug: bool) {
-        buf.type_header(debug);
+    fn definition(&self, buf: &mut CodeBuf, debug: bool, derive_serialize: bool) {
+        buf.type_header(debug, derive_serialize);
         buf.code_block(&format!("pub enum {}", self.name), |buf| {
             for var in self.variants.iter() {
                 buf.add_line(&format!("{},", var.0));
@@ -1208,11 +1228,11 @@ impl CodeBuf {
 
     /// Write standard "derive"s that each type definition should have.
     /// TODO: come up with a mechanism to add "Copy" to types for which it's appropriate?
-    pub fn type_header(&mut self, debug: bool) {
-        if debug {
-            self.add_line("#[derive(Debug, PartialEq, Clone)]");
-        } else {
-            self.add_line("#[derive(PartialEq, Clone)]");
-        }
+    pub fn type_header(&mut self, debug: bool, derive_serialize: bool) {
+        self.add_line(&std::format!(
+            "#[derive({}{}PartialEq, Clone)]",
+            if debug { "Debug ," } else { "" },
+            if derive_serialize { "Serialize ," } else { "" }
+        ));
     }
 }
