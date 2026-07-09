@@ -41,6 +41,10 @@ struct MountList {
     MountBody *inner;
 };
 
+struct MountArg {
+    DirPath path;
+};
+
 struct GroupNode {
     Name     name;
     GroupNode  *next;
@@ -63,7 +67,7 @@ struct Exports {
 program MOUNT_PROGRAM {
    version MOUNT_V3 {
         void      MOUNTPROC3_NULL(void)    = 0;
-        MountResult MOUNTPROC3_MNT(dirpath)  = 1;
+        MountResult MOUNTPROC3_MNT(MountArg)  = 1;
         MountList MOUNTPROC3_DUMP(void)    = 2;
         void      MOUNTPROC3_UMNT(dirpath) = 3;
         void      MOUNTPROC3_UMNTALL(void) = 4;

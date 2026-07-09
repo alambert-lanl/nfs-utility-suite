@@ -120,6 +120,11 @@ impl Compiler {
         self
     }
 
+    pub fn enable_derive_serialize(&mut self) -> &mut Self {
+        self.params.derive_serialize = true;
+        self
+    }
+
     pub fn run(&mut self) -> std::result::Result<(), Box<dyn Error>> {
         match &self.source {
             InputSource::StdIo => {

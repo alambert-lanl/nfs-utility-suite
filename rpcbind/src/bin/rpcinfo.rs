@@ -7,7 +7,7 @@ use clap::Parser;
 
 include!(concat!(env!("OUT_DIR"), "/rpcbind.rs"));
 
-use rpc_protocol::{OpaqueAuth, client::*};
+use rpc_protocol::{client::*, OpaqueAuth};
 
 #[derive(Parser)]
 struct Cli {
