@@ -7,7 +7,7 @@ use clap::Parser;
 
 include!(concat!(env!("OUT_DIR"), "/rpcbind.rs"));
 
-use rpc_protocol::client::*;
+use rpc_protocol::{OpaqueAuth, client::*};
 
 #[derive(Parser)]
 struct Cli {
@@ -29,6 +29,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         rpcbind::procedures::RPCBVERS::VERSION,
         rpcbind::procedures::RPCBVERS::RPCBPROC_DUMP,
         &[0u8; 0],
+        OpaqueAuth::none(),
+        OpaqueAuth::none(),
     )?;
 
     let mut list = rpcbind::RpcbindList::default();

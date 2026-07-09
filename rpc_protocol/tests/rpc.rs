@@ -57,7 +57,15 @@ fn call_invalid_program() {
     let mut client_endpoint = launch_example_server();
 
     // invalid CALL: wrong program number
-    let res = client::do_rpc_call(&mut client_endpoint, 8, 4, 1, &[0; 0]);
+    let res = client::do_rpc_call(
+        &mut client_endpoint,
+        8,
+        4,
+        1,
+        &[0; 0],
+        OpaqueAuth::none(),
+        OpaqueAuth::none(),
+    );
 
     expected_error(res, AcceptedReplyBody::ProgUnavail);
 }
@@ -67,7 +75,15 @@ fn call_invalid_version() {
     let mut client_endpoint = launch_example_server();
 
     // invalid CALL: too low version number
-    let res = client::do_rpc_call(&mut client_endpoint, 7, 1, 1, &[0; 0]);
+    let res = client::do_rpc_call(
+        &mut client_endpoint,
+        7,
+        1,
+        1,
+        &[0; 0],
+        OpaqueAuth::none(),
+        OpaqueAuth::none(),
+    );
 
     expected_error(
         res,
@@ -77,7 +93,15 @@ fn call_invalid_version() {
     let mut client_endpoint = launch_example_server();
 
     // invalid CALL: too high version number
-    let res = client::do_rpc_call(&mut client_endpoint, 7, 5, 1, &[0; 0]);
+    let res = client::do_rpc_call(
+        &mut client_endpoint,
+        7,
+        5,
+        1,
+        &[0; 0],
+        OpaqueAuth::none(),
+        OpaqueAuth::none(),
+    );
 
     expected_error(
         res,
@@ -90,7 +114,15 @@ fn call_invalid_procedure() {
     let mut client_endpoint = launch_example_server();
 
     // invalid CALL: wrong procedure number
-    let res = client::do_rpc_call(&mut client_endpoint, 7, 4, 2, &[0; 0]);
+    let res = client::do_rpc_call(
+        &mut client_endpoint,
+        7,
+        4,
+        2,
+        &[0; 0],
+        OpaqueAuth::none(),
+        OpaqueAuth::none(),
+    );
 
     expected_error(res, AcceptedReplyBody::ProcUnavail);
 }
