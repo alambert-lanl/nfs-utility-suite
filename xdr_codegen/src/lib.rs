@@ -115,6 +115,11 @@ impl Compiler {
         self
     }
 
+    pub fn disable_debug_for(&mut self, name: String) -> &mut Self {
+        self.params.omit_debug_for.push(name);
+        self
+    }
+
     pub fn run(&mut self) -> std::result::Result<(), Box<dyn Error>> {
         match &self.source {
             InputSource::StdIo => {
