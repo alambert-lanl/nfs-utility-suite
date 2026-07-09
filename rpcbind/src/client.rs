@@ -44,6 +44,8 @@ pub fn set_using_stream<S: Read + Write>(
         RPCBVERS::VERSION,
         RPCBVERS::RPCBPROC_SET,
         arg.as_slice(),
+        OpaqueAuth::none(),
+        OpaqueAuth::none(),
     )?;
 
     match res.as_slice() {
@@ -64,6 +66,8 @@ pub fn getaddr_using_stream<S: Read + Write>(
         RPCBVERS::VERSION,
         RPCBVERS::RPCBPROC_GETADDR,
         arg.as_slice(),
+        OpaqueAuth::none(),
+        OpaqueAuth::none(),
     )?;
 
     let mut addr = rpcbind::RpcbString::default();

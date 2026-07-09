@@ -11,6 +11,14 @@ struct OpaqueAuth {
     opaque body<400>;
 };
 
+struct authsys_parms {
+    unsigned int stamp;
+    string machinename<255>;
+    unsigned int uid;
+    unsigned int gid;
+    unsigned int gids<16>;
+};
+
 enum MessageType {
     Call  = 0,
     Reply = 1

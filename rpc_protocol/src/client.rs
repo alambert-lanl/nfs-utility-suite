@@ -17,14 +17,16 @@ pub fn do_rpc_call<S: Read + Write>(
     vers: u32,
     proc: u32,
     arg: &[u8],
+    cred: OpaqueAuth,
+    verf: OpaqueAuth,
 ) -> Result<Vec<u8>, Error> {
     let body = RpcMessageBody::Call(CallBody {
         rpcvers: RPC_VERSION,
         prog,
         vers,
         proc,
-        cred: OpaqueAuth::none(),
-        verf: OpaqueAuth::none(),
+        cred,
+        verf,
     });
 
     let xid = get_xid();

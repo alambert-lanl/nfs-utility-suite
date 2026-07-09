@@ -6,7 +6,7 @@ use std::net::TcpStream;
 use clap::Parser;
 
 use nfs3::mount_proto::*;
-use rpc_protocol::client::*;
+use rpc_protocol::{client::*, OpaqueAuth};
 
 #[derive(Parser)]
 struct Cli {
@@ -31,6 +31,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         procedures::MOUNT_V3::VERSION,
         procedures::MOUNT_V3::MOUNTPROC3_EXPORT,
         &[0u8; 0],
+        OpaqueAuth::none(),
+        OpaqueAuth::none(),
     )?;
 
     let mut export_list = Exports::default();
