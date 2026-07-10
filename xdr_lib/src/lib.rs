@@ -143,6 +143,9 @@ pub struct LinkedListIter<'a, T> {
 
     pub _marker: PhantomData<T>,
     err: bool,
+
+    width_cache: Option<&'a std::cell::OnceCell<usize>>,
+    eof_tail: bool,
 }
 
 macro_rules! impl_reader_for_numeric {
@@ -199,7 +202,12 @@ where
 }
 
 impl<'a, T> LinkedListIter<'a, T> {
-    pub fn new(buf: &'a [u8], item_width: Option<usize>) -> Self {
+    pub fn new(
+        buf: &'a [u8],
+        item_width: Option<usize>,
+        width_cache: Option<&'a std::cell::OnceCell<usize>>,
+        eof_tail: bool,
+    ) -> Self {
         Self {
             buf,
             item_width,
@@ -207,6 +215,8 @@ impl<'a, T> LinkedListIter<'a, T> {
             i: 0,
             _marker: PhantomData,
             err: false,
+            width_cache,
+            eof_tail,
         }
     }
 
@@ -236,6 +246,15 @@ where
         self.off += 4;
 
         if has_val == 0 {
+            if let Some(cell) = self.width_cache {
+                let _ = cell.get_or_init(|| self.off);
+            }
+
+            if self.eof_tail && self.off + 4 >= self.buf.len() {
+                self.err = true;
+                return Some(Err(DeserializeError));
+            }
+
             return None;
         }
 

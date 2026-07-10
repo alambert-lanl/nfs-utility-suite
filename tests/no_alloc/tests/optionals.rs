@@ -13,15 +13,15 @@ fn recursive_optional() {
         let node = ListNode { data: i };
         before.list.push(node);
     }
-    assert_eq!(before.get_width(), 44);
+    assert_eq!(before.get_width(), 48);
 
-    let mut bytes = vec![1; 44];
-    assert_eq!(44, before.serialize(&mut bytes));
+    let mut bytes = vec![1; 48];
+    assert_eq!(48, before.serialize(&mut bytes));
 
     let mut after = ListBegin::default();
 
     after.deserialize(&mut bytes.as_slice()).unwrap();
-    assert_eq!(44, after.get_width());
+    assert_eq!(48, after.get_width());
 
     assert_eq!(before, after);
 }

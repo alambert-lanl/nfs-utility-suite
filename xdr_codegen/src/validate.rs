@@ -245,12 +245,50 @@ impl XdrStruct {
             })
             .collect();
 
+        let mut eof_tail = false;
+        let mut has_self_ref = false;
+        // If there is to be a member after a LinkedList type, it must be `bool eof;`
+        let is_eof_bool = members.last().is_some_and(|v| match v.0.kind {
+            DeclarationKind::Scalar(XdrType::Bool) => v.0.name == "eof",
+            _ => false,
+        });
+
+        for (i, (member, _)) in members.iter().enumerate() {
+            let is_last = (i + 1 == members.len()) || (i + 2 == members.len() && is_eof_bool);
+
+            if self.member_is_self_referential(member, tab) {
+                if !is_last {
+                    return Err(XdrError::UnsupportedOptional(self.name));
+                }
+
+                has_self_ref = true;
+            }
+
+            if is_last {
+                eof_tail = is_eof_bool;
+            }
+        }
+
         Ok(ValidatedStruct {
             name: self.name,
             members,
             size: s,
             self_referential_optional: has_self_reference,
+            eof_tail,
+            contains_self_ref_opt: has_self_ref,
         })
+    }
+
+    fn member_is_self_referential(
+        &self,
+        decl: &NamedDeclaration,
+        tab: &ValidatedSymbolTable,
+    ) -> bool {
+        match &decl.kind {
+            DeclarationKind::Optional(xdr_type) => xdr_type.self_referential_optional(tab),
+            DeclarationKind::Scalar(xdr_type) => xdr_type.self_referential_optional(tab),
+            _ => false,
+        }
     }
 
     /// Determine if a struct has a "self-referential optional":
@@ -666,6 +704,8 @@ mod tests {
                     deps: vec!["b".to_string()],
                 },
                 self_referential_optional: false,
+                contains_self_ref_opt: false,
+                eof_tail: false,
             }
         );
 
@@ -714,6 +754,8 @@ mod tests {
                     deps: vec!["bar".to_string()],
                 },
                 self_referential_optional: false,
+                contains_self_ref_opt: false,
+                eof_tail: false,
             }
         );
     }
