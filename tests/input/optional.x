@@ -58,3 +58,17 @@ struct EnumNode {
 struct EnumChainStart {
     EnumNode* first;
 };
+
+typedef unsigned hyper uint64;
+
+struct Entry {
+    uint64       fileid;
+    string       name<>;
+    uint64       cookie;
+    Entry        *nextentry;
+};
+
+struct Dirlist {
+    Entry        *entries;
+    bool         eof;
+};
