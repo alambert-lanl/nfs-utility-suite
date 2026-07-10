@@ -58,7 +58,8 @@ fn test_optionals_recursive() {
         integers.push(i);
     }
 
-    for i in 0i32..110 {
+    // the first entry should read as an eof() == true
+    for i in 1i32..110 {
         data.extend([0x0, 0x0, 0x0, 0x0]);
         data.extend(i.to_be_bytes());
     }
@@ -67,7 +68,8 @@ fn test_optionals_recursive() {
     let actual_ints: Vec<i32> = reader.get_list().map(|v| v.unwrap().get_data()).collect();
 
     assert_eq!(integers, actual_ints);
-    assert_eq!(reader.get_width(), Ok(8 * 100 + 4));
+    assert_eq!(reader.get_width(), Ok(8 * 100 + 8));
+    assert!(reader.get_eof());
 }
 
 #[test]
@@ -92,6 +94,7 @@ fn test_optionals_recursive_missing_last_discriminant() {
         data.extend(i.to_be_bytes());
         integers.push(Ok(i));
     }
+    data.extend([0x0, 0x0, 0x0, 0x0]);
     integers.push(Err(DeserializeError));
 
     let reader = ListBeginReader::new(&data.as_slice()[..data.len()]).unwrap();
@@ -151,7 +154,7 @@ fn test_optionals_recursive_varlen_interiors() {
     let reader = exportsReader::new(data.as_slice()).unwrap();
     for (i, en) in reader.get_inner().enumerate() {
         assert_eq!(
-            export_groups.get(i).unwrap().dirpath.as_str().as_bytes(),
+            export_groups.get(i).unwrap().dirpath.as_bytes(),
             en.as_ref().unwrap().get_ex_dir().as_bytes()
         );
 
@@ -164,7 +167,8 @@ fn test_optionals_recursive_varlen_interiors() {
                 .unwrap()
                 .name
                 .as_bytes();
-            let second_string = gn.unwrap().get_gr_name().as_bytes();
+            let gn = gn.unwrap();
+            let second_string = gn.get_gr_name().as_bytes();
             assert_eq!(first_string, second_string);
         }
     }

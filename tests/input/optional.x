@@ -5,6 +5,7 @@ struct ListNode {
 
 struct ListBegin {
     ListNode *list;
+    bool eof;
 };
 
 struct NonRecursive {
@@ -33,14 +34,15 @@ struct groupnode {
    groups   gr_next;
 };
 
-struct exports {
-   exportnode *inner;
-};
-
 struct exportnode {
    dirpath  ex_dir;
    groups   ex_groups;
    exportnode *ex_next;
+};
+
+
+struct exports {
+   exportnode *inner;
 };
 
 enum MyEnum {
