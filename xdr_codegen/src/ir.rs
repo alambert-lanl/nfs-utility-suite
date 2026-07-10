@@ -44,6 +44,8 @@ pub struct ValidatedStruct {
     /// Structs that have an optional "pointer" to themselves at the end need special handling
     /// during codegen. This field is filled in during Schema::validate().
     pub self_referential_optional: bool,
+    pub contains_self_ref_opt: bool,
+    pub eof_tail: bool,
 }
 
 #[derive(Debug, PartialEq, Clone)]

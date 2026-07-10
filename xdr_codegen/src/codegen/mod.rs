@@ -1058,7 +1058,7 @@ impl XdrType {
     ///
     /// Such types are represented in Rust as Vectors, rather than linked lists.
     /// Non-self-referential optional types are represented as Rust Options.
-    fn self_referential_optional(&self, tab: &ValidatedSymbolTable) -> bool {
+    pub(crate) fn self_referential_optional(&self, tab: &ValidatedSymbolTable) -> bool {
         let XdrType::Name(n) = self else {
             return false;
         };
