@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright 2026. Triad National Security, LLC.
+
 include!(concat!(env!("OUT_DIR"), "/optional.rs"));
 
 use std::time::Duration;

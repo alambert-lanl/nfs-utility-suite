@@ -19,6 +19,7 @@ impl ValidatedStruct {
     ///         ...
     ///     }
     pub(super) fn serialize_no_alloc(&self, buf: &mut CodeBuf, tab: &ValidatedSymbolTable) {
+        buf.add_line("#[inline(always)]");
         buf.code_block("pub fn serialize(&self, buf: &mut [u8]) -> usize", |buf| {
             buf.add_line("let mut offset = 0;");
             for (decl, _) in &self.members {
@@ -32,6 +33,7 @@ impl ValidatedStruct {
 
 impl ValidatedUnion {
     pub(super) fn serialize_no_alloc(&self, buf: &mut CodeBuf, tab: &ValidatedSymbolTable) {
+        buf.add_line("#[inline(always)]");
         buf.code_block("pub fn serialize(&self, buf: &mut [u8]) -> usize", |buf| {
             buf.add_line("let mut offset = 0;");
             match &self.body {
@@ -58,6 +60,7 @@ impl ValidatedUnionBoolBody {
 
 impl ValidatedEnum {
     pub(super) fn serialize_no_alloc(&self, buf: &mut CodeBuf, tab: &ValidatedSymbolTable) {
+        buf.add_line("#[inline(always)]");
         buf.code_block("pub fn serialize(&self, buf: &mut [u8]) -> usize", |buf| {
             buf.add_line("let mut offset = 0;");
             buf.block_statement("let val: i32 = match self", |buf| {
