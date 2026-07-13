@@ -2,13 +2,10 @@ use xdr_codegen::codegen::ser_layout::*;
 
 fn main() {
     xdr_codegen::Compiler::new()
-        .file("../input/arrays.x")
-        .file("../input/hello.x")
-        .file("../input/typedef.x")
-        .file("../input/unions.x")
-        .file("../input/structs.x")
-        .file("../input/arrays.x")
-        .file("../input/optional.x")
+        .file("../../tests/input/optional.x")
+        .file("../../tests/input/structs.x")
+        .enable_no_alloc()
+        .enable_zcopy()
         .add_ser_layout(SerLayout {
             name: "Statx".into(),
             maps_to: "FileAttributes".into(),
@@ -136,8 +133,6 @@ fn main() {
                 // __u32 stx_atomic_write_segments_max;
             ],
         })
-        .enable_no_alloc()
-        .enable_zcopy()
         .run()
         .expect("That should have worked. :(");
 }
