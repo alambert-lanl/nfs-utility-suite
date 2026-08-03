@@ -389,7 +389,7 @@ impl ValidatedStruct {
 
         buf.add_line("");
         buf.code_block(
-            &format!("impl<'a> xdr_lib::Reader<'a> for {}Reader <'a>", &self.name),
+            &format!("impl<'a> xdr_lib::Reader<'a> for {}Reader <'a>", self.name),
             |buf| {
                 buf.code_block(
                     "fn from_buf(buf: &'a [u8]) -> xdr_lib::Result<Self>",
@@ -489,7 +489,7 @@ impl ValidatedStruct {
 
                         buf.add_line(&format!(
                             "Ok({})",
-                            &Self::offset_to_string(&overall_definition_size)
+                            Self::offset_to_string(&overall_definition_size)
                         ));
                     } else {
                         buf.add_line("Ok(0)");
@@ -535,7 +535,7 @@ impl ValidatedStruct {
 
                 buf.add_line(&format!(
                     "let required = {};",
-                    &Self::offset_to_string(&overall_definition_size)
+                    Self::offset_to_string(&overall_definition_size)
                 ));
                 buf.code_block("if required > self.buf.len()", |buf| {
                     buf.add_line("return Err(xdr_lib::DeserializeError);");
@@ -771,7 +771,7 @@ impl ValidatedUnion {
                 }
             ),
             ValidatedUnionBody::Enum(body) => {
-                format!("{}Ret{}", &self.name, body.get_explicit_lifetime(tab))
+                format!("{}Ret{}", self.name, body.get_explicit_lifetime(tab))
             }
         }
     }
