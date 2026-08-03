@@ -12,7 +12,7 @@ include!(concat!(env!("OUT_DIR"), "/nfs3_xdr.rs"));
 struct HexDebug<'a>(&'a Vec<u8>);
 impl<'a> fmt::Debug for HexDebug<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", &hex::encode(self.0))
+        write!(f, "{}", hex::encode(self.0))
     }
 }
 

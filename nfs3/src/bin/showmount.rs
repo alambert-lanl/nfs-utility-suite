@@ -77,13 +77,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         match &mount_res {
             MountResult::Ok(mount_result_ok) => {
-                println!("mount_ok: {:?}", &mount_result_ok.fhandle)
+                println!("mount_ok: {:?}", mount_result_ok.fhandle)
             }
             _ => {
                 println!("mount_failed: {mount_res:?}")
             }
         }
-        println!("mount_res: {:?}", &mount_res);
+        println!("mount_res: {:?}", mount_res);
     }
 
     Ok(())
