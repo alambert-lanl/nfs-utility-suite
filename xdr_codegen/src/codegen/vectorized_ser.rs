@@ -446,7 +446,7 @@ impl ValidatedStruct {
                                 // swap dword order
                                 let mut needs_dword_swap = false;
                                 let mut swap_idx = [0u32; 16];
-                                for i in 0..16 { swap_idx[i] = i as u32; }
+                                for (i, item) in swap_idx.iter_mut().enumerate() { *item = i as u32; }
                                 for (_, dst) in relevant_mappings.iter() {
                                     if dst.size / 4 == 2 {
                                         let dst_idx = dst.block_off / 4;
