@@ -498,7 +498,12 @@ impl BufferMap {
 
         unsafe {
             ring.submitter()
-                .register_buf_ring(buffer_map.addr as u64, num_entries, buffer_map.group_id)
+                .register_buf_ring_with_flags(
+                    buffer_map.addr as u64,
+                    num_entries,
+                    buffer_map.group_id,
+                    0,
+                )
                 .unwrap();
         };
 

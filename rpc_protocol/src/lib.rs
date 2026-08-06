@@ -18,6 +18,8 @@ pub use rpc_prot::{
     RejectedReply, ReplyBody, RpcMessage, RpcMessageBody,
 };
 
+use crate::rpc_prot::authsys_parms;
+
 /// Only supported version of the RPC Protocol
 const RPC_VERSION: u32 = 2;
 
@@ -208,10 +210,17 @@ pub fn decode_record_mark(mark: &[u8; 4]) -> Result<u32, crate::Error> {
 }
 
 impl OpaqueAuth {
-    fn none() -> Self {
+    pub fn none() -> Self {
         OpaqueAuth {
             flavor: AuthFlavor::None,
             body: Vec::new(),
+        }
+    }
+
+    pub fn sys(parms: authsys_parms) -> Self {
+        OpaqueAuth {
+            flavor: AuthFlavor::Sys,
+            body: parms.serialize_alloc(),
         }
     }
 }

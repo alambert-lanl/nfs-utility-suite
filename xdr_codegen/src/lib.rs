@@ -116,9 +116,19 @@ impl Compiler {
         self.params.zcopy = true;
         self
     }
-
+  
     pub fn add_ser_layout(&mut self, layout: SerLayout) -> &mut Self {
         self.params.ser_layouts.push(layout);
+        self
+    }
+
+    pub fn disable_debug_for(&mut self, name: String) -> &mut Self {
+        self.params.omit_debug_for.push(name);
+        self
+    }
+
+    pub fn enable_derive_serialize(&mut self) -> &mut Self {
+        self.params.derive_serialize = true;
         self
     }
 

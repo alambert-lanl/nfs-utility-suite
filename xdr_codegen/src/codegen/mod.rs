@@ -32,6 +32,12 @@ pub struct Params {
 
     /// Vectorized serialization source layouts
     pub ser_layouts: Vec<SerLayout>,
+
+    /// Names to ommit derive(Debug) for
+    pub omit_debug_for: Vec<String>,
+
+    /// Generate serde serialization derivation
+    pub derive_serialize: bool,
 }
 
 impl Default for Params {
@@ -41,6 +47,10 @@ impl Default for Params {
             alloc: true,
             zcopy: false,
             ser_layouts: vec![],
+
+            derive_serialize: false,
+            omit_debug_for: Vec::new(),
+
         }
     }
 }
@@ -68,6 +78,10 @@ pub fn codegen(schema: &ValidatedSchema, module_name: &str, params: &Params) -> 
             buf.add_line("#[allow(unused_imports)]");
             buf.add_line("use xdr_lib::Reader;");
             buf.add_line("");
+        }
+
+        if params.derive_serialize {
+            buf.add_line("use serde::Serialize;");
         }
 
         for def in schema.definition_list.iter() {
@@ -115,10 +129,10 @@ impl ValidatedDefinition {
             self.definition_zcopy(buf, tab);
         }
 
-        self.definition_copy(buf, tab);
+        self.definition_copy(buf, tab, params);
     }
 
-    fn definition_copy(&self, buf: &mut CodeBuf, tab: &ValidatedSymbolTable) {
+    fn definition_copy(&self, buf: &mut CodeBuf, tab: &ValidatedSymbolTable, params: &Params) {
         match self {
             ValidatedDefinition::Const(c) => {
                 match &c.value {
@@ -134,15 +148,19 @@ impl ValidatedDefinition {
                     }
                 };
             }
+
             ValidatedDefinition::Enum(e) => {
-                e.definition(buf);
+                let debug = !params.omit_debug_for.contains(&e.name);
+                e.definition(buf, debug, params.derive_serialize);
             }
             ValidatedDefinition::Struct(s) => {
-                s.definition(buf, tab);
+                let debug = !params.omit_debug_for.contains(&s.name);
+                s.definition(buf, tab, debug, params.derive_serialize);
             }
             ValidatedDefinition::TypeDef(_) => {}
             ValidatedDefinition::Union(u) => {
-                u.definition(buf, tab);
+                let debug = !params.omit_debug_for.contains(&u.name);
+                u.definition(buf, tab, debug, params.derive_serialize);
             }
         }
     }
@@ -486,8 +504,14 @@ impl ValidatedUnion {
         }
         buf.add_line("");
     }
-    fn definition(&self, buf: &mut CodeBuf, tab: &ValidatedSymbolTable) {
-        buf.type_header();
+    fn definition(
+        &self,
+        buf: &mut CodeBuf,
+        tab: &ValidatedSymbolTable,
+        debug: bool,
+        derive_serialize: bool,
+    ) {
+        buf.type_header(debug, derive_serialize);
         match &self.body {
             ValidatedUnionBody::Bool(b) => b.definition_bool(&self.name, buf, tab),
             ValidatedUnionBody::Enum(e) => e.definition_enum(&self.name, buf, tab),
@@ -836,9 +860,10 @@ impl ValidatedStruct {
         for name in varlen_members {
             let (member, _) = self.members.iter().find(|val| val.0.name == *name).unwrap();
 
-            buf.code_block(&format!("fn get_{}_width(&self) -> usize", name), |buf| {
-                member.get_width(buf, &format!("self.{}", name), tab)
-            });
+            buf.code_block(
+                &format!("fn get_{}_width(&self) -> usize", name.replace("r#", "")),
+                |buf| member.get_width(buf, &format!("self.{}", name), tab),
+            );
         }
 
         buf.code_block("pub fn get_width(&self) -> usize", |buf| {
@@ -863,8 +888,14 @@ impl ValidatedStruct {
         });
     }
 
-    fn definition(&self, buf: &mut CodeBuf, tab: &ValidatedSymbolTable) {
-        buf.type_header();
+    fn definition(
+        &self,
+        buf: &mut CodeBuf,
+        tab: &ValidatedSymbolTable,
+        debug: bool,
+        derive_serialize: bool,
+    ) {
+        buf.type_header(debug, derive_serialize);
         buf.code_block(&format!("pub struct {}", self.name), |buf| {
             for (decl, _) in self.members.iter() {
                 self.member_declaration(decl, buf, tab);
@@ -938,8 +969,8 @@ impl ValidatedEnum {
             });
         });
     }
-    fn definition(&self, buf: &mut CodeBuf) {
-        buf.type_header();
+    fn definition(&self, buf: &mut CodeBuf, debug: bool, derive_serialize: bool) {
+        buf.type_header(debug, derive_serialize);
         buf.code_block(&format!("pub enum {}", self.name), |buf| {
             for var in self.variants.iter() {
                 buf.add_line(&format!("{},", var.0));
@@ -1206,7 +1237,11 @@ impl CodeBuf {
 
     /// Write standard "derive"s that each type definition should have.
     /// TODO: come up with a mechanism to add "Copy" to types for which it's appropriate?
-    pub fn type_header(&mut self) {
-        self.add_line("#[derive(Debug, PartialEq, Clone)]");
+    pub fn type_header(&mut self, debug: bool, derive_serialize: bool) {
+        self.add_line(&std::format!(
+            "#[derive({}{}PartialEq, Clone)]",
+            if debug { "Debug ," } else { "" },
+            if derive_serialize { "Serialize ," } else { "" }
+        ));
     }
 }

@@ -568,7 +568,7 @@ impl ValidatedStruct {
             buf.code_block(
                 &format!(
                     "pub fn get_{}_width(&'a self) -> xdr_lib::Result<usize>",
-                    dep
+                    dep.replace("r#", "")
                 ),
                 |buf| {
                     let (member, member_off) = self
@@ -614,7 +614,7 @@ impl ValidatedStruct {
             buf.code_block(
                 &format!(
                     "pub fn get_{}(&'a self) -> {}",
-                    member.name,
+                    member.name.replace("r#", ""),
                     member.as_zcopy_dser_type_name(tab)
                 ),
                 |buf| {
